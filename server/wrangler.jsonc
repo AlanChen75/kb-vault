@@ -1,0 +1,44 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "kb-vault-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // No durable_objects! Stateless on purpose.
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kb-vault",
+      "database_id": "REPLACE_WITH_YOUR_D1_ID"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "REPLACE_WITH_YOUR_KV_ID"
+    }
+  ],
+
+  // Optional R2 for attachments
+  // "r2_buckets": [
+  //   { "binding": "ATTACHMENTS", "bucket_name": "kb-vault-attachments" }
+  // ],
+
+  // Optional Workers AI for summarization
+  // "ai": { "binding": "AI" },
+
+  "triggers": {
+    // UTC -> Taipei: 09:00, 13:00, 18:00 daily
+    "crons": ["0 1 * * *", "0 5 * * *", "0 10 * * *"]
+  },
+
+  "vars": {
+    "APP_URL": "https://kb-vault.pages.dev",
+    "API_URL": "https://kb-vault-api.example.workers.dev"
+  },
+
+  "observability": { "enabled": true }
+}

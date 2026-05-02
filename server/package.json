@@ -1,0 +1,27 @@
+{
+  "name": "kb-vault-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --remote",
+    "dev:local": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "db:migrate": "wrangler d1 execute kb-vault --file=schema.sql --remote",
+    "db:migrate:local": "wrangler d1 execute kb-vault --file=schema.sql --local",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "hono": "^4.9.0",
+    "jose": "^5.10.0",
+    "ulid": "^2.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260301.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.0.0"
+  }
+}
