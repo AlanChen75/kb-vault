@@ -1,7 +1,16 @@
 /**
  * MCP Token management.
- * Generates random tokens; stores user info in KV (for fast lookup) and
- * metadata + sha256 hash in D1 (for listing/revocation).
+ *
+ * Storage strategy:
+ *   D1 mcp_tokens: { id, user_id, label, kv_key, created_at, last_used_at }
+ *   KV mcp_token:{kv_key} -> user JSON (lookup is O(1) on every MCP request)
+ *
+ * Rotation/revocation:
+ *   On revoke, delete BOTH the D1 row and the KV entry by kv_key.
+ *   The token plaintext (mcp_xxx) IS the kv_key suffix, so we store kv_key in D1
+ *   instead of a SHA hash to enable clean revocation.
+ *   (Trade-off: anyone with D1 read access could see kv_keys. Cloudflare-managed,
+ *   single-tenant DB; acceptable for personal KB.)
  */
 
 import { Hono } from 'hono'
@@ -28,17 +37,17 @@ tokens.post('/', async (c) => {
   const body = createSchema.parse(await c.req.json().catch(() => ({})))
 
   const raw = `mcp_${randomBase64Url(32)}`
-  const hash = await sha256(raw)
+  const kvKey = `mcp_token:${raw}`
   const id = ulid()
   const now = Date.now()
+
+  await c.env.SESSIONS.put(kvKey, JSON.stringify(user))
 
   await c.env.DB.prepare(
     'INSERT INTO mcp_tokens(id, user_id, label, token_hash, created_at) VALUES (?,?,?,?,?)'
   )
-    .bind(id, user.id, body.label ?? null, hash, now)
+    .bind(id, user.id, body.label ?? null, kvKey, now)
     .run()
-
-  await c.env.SESSIONS.put(`mcp_token:${raw}`, JSON.stringify(user))
 
   return c.json({ id, label: body.label ?? null, token: raw, created_at: now }, 201)
 })
@@ -47,10 +56,15 @@ tokens.delete('/:id', async (c) => {
   const user = c.get('user')
   const id = c.req.param('id')
 
-  // We don't store raw token in D1 (only hash), but we kept token in KV under
-  // mcp_token:{raw} -> we need raw to delete from KV. Workaround: scan?
-  // Practical approach: delete D1 row, leave KV (it'll be unused).
-  // TODO: refactor to store kv key alongside hash for clean revocation.
+  const row = await c.env.DB.prepare(
+    'SELECT token_hash FROM mcp_tokens WHERE id = ? AND user_id = ?'
+  )
+    .bind(id, user.id)
+    .first<{ token_hash: string }>()
+
+  if (!row) return c.json({ error: 'not_found' }, 404)
+
+  await c.env.SESSIONS.delete(row.token_hash)
   await c.env.DB.prepare('DELETE FROM mcp_tokens WHERE id = ? AND user_id = ?')
     .bind(id, user.id)
     .run()
@@ -65,12 +79,6 @@ function randomBase64Url(bytes: number): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '')
-}
-
-async function sha256(s: string): Promise<string> {
-  const buf = new TextEncoder().encode(s)
-  const hash = await crypto.subtle.digest('SHA-256', buf)
-  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 export default tokens

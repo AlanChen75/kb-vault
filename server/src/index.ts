@@ -23,6 +23,7 @@ import graphRoutes from './api/graph'
 import rssRoutes from './api/rss'
 import syncRoutes from './api/sync'
 import tokensRoutes from './api/tokens'
+import statsRoutes from './api/stats'
 
 import mcpHandler from './mcp/handler'
 import { runRssFetch } from './cron/rss-fetch'
@@ -59,6 +60,7 @@ api.route('/graph', graphRoutes)
 api.route('/rss', rssRoutes)
 api.route('/sync', syncRoutes)
 api.route('/tokens', tokensRoutes)
+api.route('/stats', statsRoutes)
 api.get('/me', (c) => c.json(c.get('user')))
 app.route('/api', api)
 
