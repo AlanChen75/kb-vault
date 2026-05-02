@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 /**
  * Tiny fetch wrapper for kb-vault API.
  * Sends cookies for session, auto-redirects to /login on 401.
