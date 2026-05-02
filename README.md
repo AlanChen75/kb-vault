@@ -124,11 +124,11 @@ kb-vault 用 stateless Worker + D1 + KV，整套可以無痛搬到：
 
 ## Status
 
-- [x] Spec 完成（README、ARCHITECTURE、API、MCP、DEPLOYMENT）
+- [x] Spec 完成（README、ARCHITECTURE、API、MCP、DEPLOYMENT、PORTING）
 - [x] D1 schema 設計
-- [x] Worker 骨架（Hono router）
-- [ ] Server 完整實作
-- [ ] UI SPA 完整實作
+- [x] Worker 完整實作（auth + REST + MCP + RSS cron + Notion/GitHub sync）
+- [x] UI 7 頁完整實作（Login / Home / NoteDetail / Search / Graph / RSS / Settings）
+- [x] **架構驗證**：Claude **免費帳號** 加 custom MCP connector 連線成功（無需 Pro/Team）
 - [ ] Demo 站部署
 - [ ] GitHub public repo
 
