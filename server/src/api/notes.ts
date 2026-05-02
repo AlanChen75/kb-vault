@@ -1,13 +1,17 @@
 /**
- * Notes CRUD endpoints.
- *
- * Skeleton only — implement business logic in lib/notes.ts and import here.
+ * Notes CRUD endpoints — thin Hono wrappers over lib/notes.
  */
 
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { ulid } from 'ulid'
 import type { Env, Variables } from '../types'
+import {
+  createNote as createNoteLib,
+  deleteNote as deleteNoteLib,
+  getNote as getNoteLib,
+  listRecent,
+  updateNote as updateNoteLib,
+} from '../lib/notes'
 
 const notes = new Hono<{ Bindings: Env; Variables: Variables }>()
 
@@ -19,79 +23,49 @@ const createSchema = z.object({
   source_url: z.string().url().optional(),
 })
 
+const updateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  content: z.string().optional(),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  source_url: z.string().url().optional(),
+})
+
 notes.get('/', async (c) => {
   const user = c.get('user')
-  const { results } = await c.env.DB.prepare(
-    `SELECT id, title, category, source, source_url, created_at, updated_at
-     FROM notes WHERE user_id = ?
-     ORDER BY updated_at DESC LIMIT 50`
-  )
-    .bind(user.id)
-    .all()
-  return c.json({ items: results })
+  const limit = Number(c.req.query('limit') ?? 50)
+  const category = c.req.query('category') ?? undefined
+  const items = await listRecent(c.env.DB, user.id, { limit, category })
+  return c.json({ items })
 })
 
 notes.post('/', async (c) => {
   const user = c.get('user')
   const body = createSchema.parse(await c.req.json())
-  const id = ulid()
-  const now = Date.now()
-
-  await c.env.DB.prepare(
-    `INSERT INTO notes (id, user_id, title, content, category, source, source_url, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'manual', ?, ?, ?)`
-  )
-    .bind(
-      id,
-      user.id,
-      body.title,
-      body.content,
-      body.category ?? null,
-      body.source_url ?? null,
-      now,
-      now
-    )
-    .run()
-
-  if (body.tags?.length) {
-    const stmts = body.tags.map((t) =>
-      c.env.DB.prepare('INSERT OR IGNORE INTO tags(note_id, tag) VALUES (?, ?)').bind(id, t)
-    )
-    await c.env.DB.batch(stmts)
-  }
-
-  return c.json({ id, url: `${c.env.APP_URL}/note/${id}` }, 201)
+  const note = await createNoteLib(c.env.DB, user.id, { ...body, source: 'manual' })
+  return c.json({ id: note.id, url: `${c.env.APP_URL}/note/${note.id}` }, 201)
 })
 
 notes.get('/:id', async (c) => {
   const user = c.get('user')
-  const id = c.req.param('id')
-
-  const note = await c.env.DB.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ?')
-    .bind(id, user.id)
-    .first()
+  const note = await getNoteLib(c.env.DB, user.id, c.req.param('id'))
   if (!note) return c.json({ error: 'not_found' }, 404)
-
-  const tags = await c.env.DB.prepare('SELECT tag FROM tags WHERE note_id = ?')
-    .bind(id)
-    .all<{ tag: string }>()
-  const linksOut = await c.env.DB.prepare('SELECT to_id FROM links WHERE from_id = ?')
-    .bind(id)
-    .all<{ to_id: string }>()
-  const linksIn = await c.env.DB.prepare('SELECT from_id FROM links WHERE to_id = ?')
-    .bind(id)
-    .all<{ from_id: string }>()
-
-  return c.json({
-    ...note,
-    tags: tags.results.map((r) => r.tag),
-    links_out: linksOut.results.map((r) => r.to_id),
-    links_in: linksIn.results.map((r) => r.from_id),
-  })
+  return c.json(note)
 })
 
-// PUT and DELETE skeleton
-notes.put('/:id', async (c) => c.json({ error: 'not_implemented' }, 501))
-notes.delete('/:id', async (c) => c.json({ error: 'not_implemented' }, 501))
+notes.put('/:id', async (c) => {
+  const user = c.get('user')
+  const body = updateSchema.parse(await c.req.json())
+  const note = await updateNoteLib(c.env.DB, user.id, c.req.param('id'), body)
+  if (!note) return c.json({ error: 'not_found' }, 404)
+  return c.json(note)
+})
+
+notes.delete('/:id', async (c) => {
+  const user = c.get('user')
+  const ok = await deleteNoteLib(c.env.DB, user.id, c.req.param('id'))
+  if (!ok) return c.json({ error: 'not_found' }, 404)
+  return c.json({ ok: true })
+})
 
 export default notes

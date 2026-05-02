@@ -1,34 +1,41 @@
 /**
  * MCP tool definitions and dispatcher.
  *
- * Each tool is a thin wrapper around the same business logic
- * used by the REST API (lib/notes.ts, lib/rss.ts).
+ * Tool descriptions ported from kb-mcp (2026-05-02).
+ * Business logic delegates to lib/notes.ts (D1-backed) — new for kb-vault.
  */
 
 import { z } from 'zod'
 import type { Env, User } from '../types'
-// import { createNote, getNote, listRecent, searchNotes, ... } from '../lib/notes'
-// import { listRssItems, saveRssToNote, subscribeRss } from '../lib/rss'
+import {
+  createNote,
+  getNote,
+  listRecent,
+  searchNotes,
+  getStats,
+  updateNote as updateNoteLib,
+} from '../lib/notes'
+import { NOTE_FORMAT_DESCRIPTION } from '../lib/note-format'
 
 export const tools = [
   {
     name: 'create_note',
-    description: '建立新卡片到 kb-vault。支援 markdown content + 分類 + 標籤。',
+    description: NOTE_FORMAT_DESCRIPTION,
     inputSchema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: '卡片標題（30 字內建議）' },
-        content: { type: 'string', description: 'Markdown 內容' },
-        category: { type: 'string', description: '分類路徑，如 tech、tech/ai-ml' },
+        title: { type: 'string', description: '筆記標題（30 字內）' },
+        content: { type: 'string', description: '完整 Markdown 內容（含 YAML frontmatter）' },
+        category: { type: 'string', description: '分類路徑，如 tech/ai-ml' },
         tags: { type: 'array', items: { type: 'string' } },
-        source_url: { type: 'string', description: '原始來源 URL（選填）' },
+        source_url: { type: 'string' },
       },
-      required: ['title', 'content'],
+      required: ['title', 'content', 'category'],
     },
   },
   {
     name: 'update_note',
-    description: '更新既有卡片。',
+    description: '更新既有筆記。先用 get_note 讀現有內容，修改後用此工具更新。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -43,7 +50,7 @@ export const tools = [
   },
   {
     name: 'get_note',
-    description: '讀取卡片完整內容含雙向連結。',
+    description: '讀取筆記的完整內容（含 frontmatter、雙向連結）。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string' } },
@@ -52,12 +59,12 @@ export const tools = [
   },
   {
     name: 'search_notes',
-    description: '全文搜尋（D1 FTS5）。',
+    description: '搜尋知識庫筆記（D1 FTS5 全文）。可限定分類。回傳含 snippet。',
     inputSchema: {
       type: 'object',
       properties: {
-        query: { type: 'string' },
-        category: { type: 'string' },
+        query: { type: 'string', description: '搜尋關鍵字' },
+        category: { type: 'string', description: '限定分類路徑，如 tech' },
         limit: { type: 'number', minimum: 1, maximum: 30, default: 10 },
       },
       required: ['query'],
@@ -65,65 +72,29 @@ export const tools = [
   },
   {
     name: 'list_recent',
-    description: '列出最近編輯的卡片。',
+    description: '列出最近新增或修改的筆記。可限定分類。',
     inputSchema: {
       type: 'object',
       properties: {
-        limit: { type: 'number', default: 10 },
+        limit: { type: 'number', minimum: 1, maximum: 30, default: 10 },
         category: { type: 'string' },
       },
     },
   },
   {
     name: 'kb_stats',
-    description: '知識庫統計（總數、分類分布、近期活動）。',
+    description: '查看知識庫統計：總筆記數、各分類數量、近期活動。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
-    name: 'subscribe_rss',
-    description: '新增 RSS 訂閱。',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string' },
-        title: { type: 'string' },
-        category: { type: 'string' },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'list_rss_items',
-    description: '列出 RSS 收件匣項目。',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        unread: { type: 'boolean', default: true },
-        limit: { type: 'number', default: 30 },
-      },
-    },
-  },
-  {
-    name: 'save_rss_to_note',
-    description: '把 RSS 項目轉成卡片。',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        rss_item_id: { type: 'string' },
-        category: { type: 'string' },
-        tags: { type: 'array', items: { type: 'string' } },
-      },
-      required: ['rss_item_id'],
-    },
-  },
-  {
     name: 'fetch_url',
-    description: '抓取網頁內容轉純文字。',
+    description:
+      '抓取任意 URL 的網頁內容轉純文字。用於讀取使用者貼的連結、文章。社群媒體因需登入，可能無法抓取完整內容。',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string' },
-        max_length: { type: 'number', default: 30000 },
+        max_length: { type: 'number', minimum: 1000, maximum: 100000, default: 30000 },
       },
       required: ['url'],
     },
@@ -132,9 +103,9 @@ export const tools = [
 
 const schemas: Record<string, z.ZodTypeAny> = {
   create_note: z.object({
-    title: z.string().min(1),
+    title: z.string().min(1).max(200),
     content: z.string(),
-    category: z.string().optional(),
+    category: z.string(),
     tags: z.array(z.string()).optional(),
     source_url: z.string().url().optional(),
   }),
@@ -156,20 +127,6 @@ const schemas: Record<string, z.ZodTypeAny> = {
     category: z.string().optional(),
   }),
   kb_stats: z.object({}),
-  subscribe_rss: z.object({
-    url: z.string().url(),
-    title: z.string().optional(),
-    category: z.string().optional(),
-  }),
-  list_rss_items: z.object({
-    unread: z.boolean().default(true),
-    limit: z.number().int().min(1).max(100).default(30),
-  }),
-  save_rss_to_note: z.object({
-    rss_item_id: z.string(),
-    category: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-  }),
   fetch_url: z.object({
     url: z.string().url(),
     max_length: z.number().int().min(1000).max(100000).default(30000),
@@ -188,31 +145,108 @@ export async function callTool(
   env: Env
 ): Promise<ToolResult> {
   const schema = schemas[name]
-  if (!schema) {
-    return text(`Unknown tool: ${name}`, true)
-  }
-
+  if (!schema) return text(`Unknown tool: ${name}`, true)
   const args = schema.parse(rawArgs)
 
-  // TODO: implement business logic. Skeleton only.
   switch (name) {
-    case 'create_note':
-      // const note = await createNote(env.DB, user.id, args)
-      // return text(JSON.stringify({ id: note.id, url: `${env.APP_URL}/note/${note.id}` }))
-      return text('TODO: implement create_note in lib/notes.ts')
-
-    case 'search_notes':
-      // const items = await searchNotes(env.DB, user.id, args)
-      // return text(JSON.stringify(items, null, 2))
-      return text('TODO: implement search_notes in lib/notes.ts')
-
-    // ... other tools
-
+    case 'create_note': {
+      const note = await createNote(env.DB, user.id, {
+        ...(args as z.infer<typeof schemas.create_note>),
+        source: 'mcp',
+      })
+      return json({
+        status: 'created',
+        id: note.id,
+        url: `${env.APP_URL}/note/${note.id}`,
+      })
+    }
+    case 'update_note': {
+      const a = args as z.infer<typeof schemas.update_note>
+      const r = await updateNoteLib(env.DB, user.id, a.id, a)
+      if (!r) return text(`Note not found: ${a.id}`, true)
+      return json({ status: 'updated', id: r.id })
+    }
+    case 'get_note': {
+      const a = args as z.infer<typeof schemas.get_note>
+      const r = await getNote(env.DB, user.id, a.id)
+      if (!r) return text(`Note not found: ${a.id}`, true)
+      return json(r)
+    }
+    case 'search_notes': {
+      const r = await searchNotes(env.DB, user.id, args as z.infer<typeof schemas.search_notes>)
+      return json({ items: r })
+    }
+    case 'list_recent': {
+      const r = await listRecent(env.DB, user.id, args as z.infer<typeof schemas.list_recent>)
+      return json({ items: r })
+    }
+    case 'kb_stats': {
+      const r = await getStats(env.DB, user.id)
+      return json(r)
+    }
+    case 'fetch_url': {
+      const a = args as z.infer<typeof schemas.fetch_url>
+      const r = await fetchUrlAsText(a.url, a.max_length)
+      return json(r)
+    }
     default:
-      return text(`Tool ${name} not yet implemented`, true)
+      return text(`Tool ${name} not implemented`, true)
   }
 }
 
 function text(s: string, isError = false): ToolResult {
   return { content: [{ type: 'text', text: s }], isError }
+}
+
+function json(obj: unknown): ToolResult {
+  return { content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] }
+}
+
+async function fetchUrlAsText(url: string, maxLength: number): Promise<{
+  url: string
+  content_length: number
+  content: string
+}> {
+  const u = new URL(url)
+  const trackingParams = [
+    'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'gclid', 'mc_cid', 'mc_eid', 'ref', '_hsenc', '_hsmi',
+  ]
+  for (const p of trackingParams) u.searchParams.delete(p)
+
+  const r = await fetch(u.toString(), {
+    headers: {
+      'user-agent': 'Mozilla/5.0 (compatible; kb-vault/0.1)',
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'accept-language': 'zh-TW,zh;q=0.9,en;q=0.8',
+    },
+    redirect: 'follow',
+  })
+  if (!r.ok) throw new Error(`Failed to fetch: HTTP ${r.status} ${r.statusText}`)
+
+  const ct = r.headers.get('content-type') ?? ''
+  let body: string
+  if (ct.includes('application/json')) {
+    body = JSON.stringify(await r.json(), null, 2)
+  } else {
+    const html = await r.text()
+    body = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+  if (body.length > maxLength) body = body.slice(0, maxLength) + '\n\n...(truncated)'
+
+  return { url: u.toString(), content_length: body.length, content: body }
 }
