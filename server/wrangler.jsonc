@@ -11,14 +11,14 @@
     {
       "binding": "DB",
       "database_name": "kb-vault",
-      "database_id": "REPLACE_WITH_YOUR_D1_ID"
+      "database_id": "5d5f5a06-b037-4f43-a6c3-700c214ad6ed"
     }
   ],
 
   "kv_namespaces": [
     {
       "binding": "SESSIONS",
-      "id": "REPLACE_WITH_YOUR_KV_ID"
+      "id": "da39f24f31cd45a3b5d7f8e115a02a88"
     }
   ],
 
@@ -31,13 +31,13 @@
   // "ai": { "binding": "AI" },
 
   "triggers": {
-    // UTC -> Taipei: 09:00, 13:00, 18:00 daily
-    "crons": ["0 1 * * *", "0 5 * * *", "0 10 * * *"]
+    // UTC 01:00 = Taipei 09:00. Single daily run to stay under the 5-cron account limit.
+    "crons": ["0 1 * * *"]
   },
 
   "vars": {
     "APP_URL": "https://kb-vault.pages.dev",
-    "API_URL": "https://kb-vault-api.example.workers.dev"
+    "API_URL": "https://kb-vault-api.alan-chen75.workers.dev"
   },
 
   "observability": { "enabled": true }
