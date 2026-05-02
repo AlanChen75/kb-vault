@@ -33,17 +33,21 @@ export class NotionSync {
   }
 
   /** Upsert a note. Returns the Notion page_id. */
-  async upsertNote(note: {
-    id: string
-    title: string
-    content: string
-    category: string | null
-    tags: string[]
-    updated_at: number
-  }): Promise<string> {
+  async upsertNote(
+    note: {
+      id: string
+      title: string
+      content: string
+      category: string | null
+      tags: string[]
+      updated_at: number
+    },
+    appUrl?: string
+  ): Promise<string> {
     const existingId = await this.findByKbVaultId(note.id)
     const properties = this.buildProperties(note)
-    const children = markdownToBlocks(note.content)
+    const callout = mirrorCallout(note.id, appUrl)
+    const children = [callout, ...markdownToBlocks(note.content)]
 
     if (existingId) {
       // Update properties + replace children
@@ -135,6 +139,30 @@ export class NotionSync {
       throw new Error(`Notion ${r.status}: ${body.slice(0, 500)}`)
     }
     return r
+  }
+}
+
+/**
+ * Top-of-page warning callout that says "this is a one-way mirror".
+ * Notion is treated as a read-only mirror; primary edit happens in kb-vault Web UI.
+ */
+function mirrorCallout(noteId: string, appUrl?: string): unknown {
+  const editUrl = appUrl ? `${appUrl}/note/${noteId}` : `kb-vault Web UI`
+  return {
+    object: 'block',
+    type: 'callout',
+    callout: {
+      rich_text: [
+        {
+          type: 'text',
+          text: {
+            content: `此頁為 kb-vault 自動同步的鏡像副本。請勿在此編輯（會被下次同步覆蓋）。\n編輯請至：${editUrl}`,
+          },
+        },
+      ],
+      icon: { type: 'emoji', emoji: '⚠️' },
+      color: 'yellow_background',
+    },
   }
 }
 

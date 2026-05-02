@@ -74,14 +74,17 @@ sync.post('/notion', async (c) => {
   for (const note of notes) {
     try {
       const tags = await getTags(c.env, note.id)
-      const pageId = await notion.upsertNote({
-        id: note.id,
-        title: note.title,
-        content: note.content,
-        category: note.category,
-        tags,
-        updated_at: note.updated_at,
-      })
+      const pageId = await notion.upsertNote(
+        {
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          category: note.category,
+          tags,
+          updated_at: note.updated_at,
+        },
+        c.env.APP_URL
+      )
       await recordSync(c.env, note.id, 'notion', pageId)
       synced++
     } catch (e) {
