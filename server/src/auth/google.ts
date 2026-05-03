@@ -104,7 +104,7 @@ auth.get('/cb', async (c) => {
   setCookie(c, 'sid', sid, {
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None',  // UI on .pages.dev fetches API on .workers.dev = cross-site, needs None
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   })
