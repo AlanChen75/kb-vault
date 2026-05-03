@@ -17,10 +17,10 @@ const browser = await chromium.launch({ channel: 'chrome' })
 for (const bp of breakpoints) {
   const ctx = await browser.newContext({ viewport: { width: bp.width, height: bp.height } })
   const page = await ctx.newPage()
-  await page.goto('http://localhost:5176/', { waitUntil: 'domcontentloaded', timeout: 15000 })
+  await page.goto('https://kb-vault.pages.dev/', { waitUntil: 'domcontentloaded', timeout: 15000 })
 
   // Wait briefly for React render
-  await page.waitForTimeout(1500)
+  await page.waitForTimeout(5000)
 
   const path = join(outDir, `${bp.name}-${bp.width}x${bp.height}.png`)
   await page.screenshot({ path, fullPage: false })
