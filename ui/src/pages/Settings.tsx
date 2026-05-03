@@ -10,24 +10,22 @@ function ConnectionDetails({
   apiUrl: string
   onDismiss: () => void
 }) {
-  const mcpUrl = `${apiUrl}/mcp`
-  const tokenPreview =
-    token.length > 24 ? token.slice(0, 16) + '…' + token.slice(-4) : token
+  const connectorUrl = `${apiUrl}/mcp?token=${token}`
 
-  const [copied, setCopied] = useState<string>('')
-  function copy(value: string, label: string) {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(label)
-      setTimeout(() => setCopied(''), 1500)
+  const [copied, setCopied] = useState(false)
+  function copyConnector() {
+    navigator.clipboard.writeText(connectorUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     })
   }
 
   return (
     <div className="alert">
-      <strong>⚠️ Token 只顯示這一次，立刻複製</strong>
+      <strong>⚠️ 連接器 URL 含你的 token，**只顯示這一次**，立刻複製</strong>
 
       <button
-        onClick={() => copy(token, 'token')}
+        onClick={copyConnector}
         className="btn-primary"
         style={{
           width: '100%',
@@ -37,29 +35,37 @@ function ConnectionDetails({
           fontFamily: 'ui-monospace, monospace',
         }}
       >
-        {copied === 'token'
-          ? '✓ 已複製，貼進 Claude connector 的 Auth 欄'
-          : `📋 複製 token  (${tokenPreview})`}
+        {copied ? '✓ 已複製整段，可貼進 Claude connector URL 欄位' : '📋 複製連接器 URL（含 token）'}
       </button>
 
-      <p className="hint" style={{ marginTop: 16, marginBottom: 6 }}>
-        Claude.ai → Settings → Connectors → Add custom connector，三欄填：
+      <code
+        style={{
+          display: 'block',
+          marginTop: 12,
+          padding: 10,
+          fontSize: 11,
+          wordBreak: 'break-all',
+          background: 'rgba(0,0,0,0.04)',
+          borderRadius: 4,
+        }}
+      >
+        {connectorUrl}
+      </code>
+
+      <p className="hint" style={{ marginTop: 12 }}>
+        <strong>怎麼用：</strong>
       </p>
-      <div className="conn-row">
-        <span className="conn-label">Name</span>
-        <code className="conn-value">kb-vault</code>
-      </div>
-      <div className="conn-row">
-        <span className="conn-label">URL</span>
-        <code className="conn-value">{mcpUrl}</code>
-        <button onClick={() => copy(mcpUrl, 'url')} className="btn-text">
-          {copied === 'url' ? '✓' : 'Copy'}
-        </button>
-      </div>
-      <div className="conn-row">
-        <span className="conn-label">Auth</span>
-        <code className="conn-value">用上面那顆 token</code>
-      </div>
+      <ol className="hint" style={{ paddingLeft: 20, margin: '4px 0' }}>
+        <li>到 Claude.ai → Settings → Connectors → <strong>Add custom connector</strong></li>
+        <li>Name 自己填（例：<code>kb-vault</code>）</li>
+        <li><strong>Remote MCP server URL</strong> 欄位直接貼整段（含 <code>?token=...</code>）</li>
+        <li>OAuth Client ID / Secret <strong>留白</strong>，按 Save</li>
+        <li>進對話試問「列出 kb-vault 最近的卡片」</li>
+      </ol>
+
+      <p className="hint" style={{ marginTop: 12, color: '#dc2626' }}>
+        ⚠️ 這個 URL 含你的 token = 等於密碼。不要分享、不要 commit 到 GitHub。萬一外洩，回來 Revoke 重產一個即可。
+      </p>
 
       <button
         onClick={onDismiss}
@@ -136,17 +142,17 @@ export default function Settings() {
       )}
 
       <section>
-        <h2>MCP Tokens</h2>
+        <h2>MCP 連線</h2>
         <p className="hint">
-          Generate a token to connect from Claude.ai. URL: <code>{api.apiUrl}/mcp</code>
+          產生一個 token 後拿到「連接器 URL」，直接貼進 Claude.ai 的 Add custom connector。每個裝置一個，可隨時撤銷。
         </p>
         <form onSubmit={generateToken} className="inline-form">
           <input
-            placeholder="Label (e.g. Claude Desktop)"
+            placeholder="Label (e.g. iPhone Claude)"
             value={newTokenLabel}
             onChange={(e) => setNewTokenLabel(e.target.value)}
           />
-          <button type="submit" className="btn-primary">Generate</button>
+          <button type="submit" className="btn-primary">產生新 token</button>
         </form>
         {justCreated && (
           <ConnectionDetails token={justCreated} apiUrl={api.apiUrl} onDismiss={() => setJustCreated(null)} />

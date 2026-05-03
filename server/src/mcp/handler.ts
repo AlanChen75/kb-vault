@@ -15,9 +15,14 @@ import { tools, callTool } from './tools'
 const mcp = new Hono<{ Bindings: Env }>()
 
 mcp.post('/', async (c) => {
-  // 1. Bearer token auth
-  const auth = c.req.header('authorization') ?? ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+  // Accept token from EITHER Bearer header OR ?token=... query string.
+  // The query-string form lets Claude.ai consume a single connector URL
+  // that bakes the token in (matches agent-kb's pattern).
+  const headerAuth = c.req.header('authorization') ?? ''
+  const headerToken = headerAuth.startsWith('Bearer ') ? headerAuth.slice(7) : ''
+  const queryToken = c.req.query('token') ?? ''
+  const token = headerToken || queryToken
+
   const user = await verifyMcpToken(c.env, token)
   if (!user) {
     return c.json({ error: 'unauthorized' }, 401)
