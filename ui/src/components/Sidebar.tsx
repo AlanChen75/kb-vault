@@ -26,7 +26,7 @@ export default function Sidebar({ open, collapsed, setCollapsed, onClose, user, 
     >
       {/* brand */}
       <div className="h-14 flex items-center px-4 border-b border-slate-200 dark:border-slate-900">
-        <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0">🧠</div>
+        <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0">F</div>
         {!collapsed && (
           <div className="ml-2.5 min-w-0">
             <div className="text-[13px] font-semibold truncate">Free Second Brain</div>

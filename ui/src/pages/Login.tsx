@@ -45,7 +45,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-box">
-        <h1>🧠 Free Second Brain</h1>
+        <h1>Free Second Brain</h1>
         <p>Open-source Second Brain for the LLM age.<br/>Bring your own Claude.</p>
 
         {sent ? (
