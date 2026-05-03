@@ -26,11 +26,11 @@ export default function Sidebar({ open, collapsed, setCollapsed, onClose, user, 
     >
       {/* brand */}
       <div className="h-14 flex items-center px-4 border-b border-slate-200 dark:border-slate-900">
-        <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0">📚</div>
+        <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center font-bold text-sm shrink-0">🧠</div>
         {!collapsed && (
           <div className="ml-2.5 min-w-0">
-            <div className="text-[13px] font-semibold truncate">kb-vault</div>
-            <div className="text-[10.5px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">個人知識保險庫</div>
+            <div className="text-[13px] font-semibold truncate">Free Second Brain</div>
+            <div className="text-[10.5px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">bring your own claude</div>
           </div>
         )}
       </div>
