@@ -16,9 +16,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [])
 
   async function logout() {
-    await api.post('/auth/logout').catch(() => null)
-    setUser(null)
-    navigate('/login')
+    // CF Access logout — clears CF Access session for this app
+    location.href = '/cdn-cgi/access/logout'
+    void navigate
   }
 
   if (!checked) return <div className="loading">Loading…</div>
