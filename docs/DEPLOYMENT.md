@@ -7,20 +7,31 @@
 ## 前置需求
 
 - Cloudflare 帳號（Free 即可）
-- Google Cloud Console 帳號（拿 OAuth credentials）
+- GitHub 帳號（拿 OAuth credentials）
 - Node.js 20+
 - `npm install -g wrangler`
 
 ---
 
-## Step 1：Google OAuth credentials
+## 給 IDE AI 用的快速版（建議）
 
-1. 開 https://console.cloud.google.com/apis/credentials
-2. 建 OAuth 2.0 Client ID（Web application）
-3. **Authorized redirect URIs** 加：
-   - `https://kb-vault-api.<your-subdomain>.workers.dev/auth/google/cb`（部署後拿到的 URL）
-   - `http://localhost:8787/auth/google/cb`（本機開發）
-4. 拿 `Client ID` 和 `Client Secret` 備用
+如果你用 Claude Code / Cursor / Codex CLI 跑這個 deploy，把這段貼給它即可，AI 會逐步問你要 token：
+
+> 我要把 `kb-vault` 部署到我的 Cloudflare 帳號，依 docs/DEPLOYMENT.md 走完整 Step 1-3。
+> 過程中如果你需要 token / ID（GitHub OAuth、Notion、GitHub PAT 等），主動跟我要，並告訴我去哪取。
+> 設完一個 secret 就跑下一步。每個 step 做完跟我確認。
+
+下面是給人讀的完整版。
+
+---
+
+## Step 1：GitHub OAuth credentials
+
+1. 開 https://github.com/settings/developers → New OAuth App
+2. **Homepage URL**: `https://<your-pages>.pages.dev`（部署後改）
+3. **Authorization callback URL**: `https://kb-vault-api.<your-subdomain>.workers.dev/auth/github/callback`
+4. 拿 `Client ID`，按 **Generate a new client secret** 拿 `Client Secret`
+5. （選配）設一個 magic link 用的 email service token — 參考 [AUTH_OPTIONS.md](AUTH_OPTIONS.md)
 
 ---
 
@@ -51,25 +62,71 @@ npx wrangler kv namespace create SESSIONS
 ```
 把 `id` 填進 `wrangler.jsonc` 的 `kv_namespaces`。
 
-### 設 Secret
-```bash
-npx wrangler secret put GOOGLE_CLIENT_ID
-# 貼上 Step 1 拿到的 Client ID
+### 設必要 Secret（4 個，缺一不可）
 
-npx wrangler secret put GOOGLE_CLIENT_SECRET
-npx wrangler secret put SESSION_SECRET     # openssl rand -hex 32
-npx wrangler secret put ALLOWED_EMAILS     # alan@x.com,bob@y.com（逗號分隔）
+```bash
+# 1. Step 1 拿到的 GitHub OAuth credentials
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
+
+# 2. Session 加密鑰匙（隨機 64 字元）
+openssl rand -hex 32 | npx wrangler secret put SESSION_SECRET
+
+# 3. 登入白名單（你的 GitHub primary email，逗號分隔多個）
+npx wrangler secret put ALLOWED_EMAILS
+# 例：alan.chen75@gmail.com,partner@x.com
 ```
 
-### 選配 Secret
-```bash
-# Notion 同步
-npx wrangler secret put NOTION_TOKEN
-npx wrangler secret put NOTION_DATABASE_ID
+### 選配：Notion 同步（推卡片到 Notion DB 當鏡像）
 
-# GitHub 備份
+**A. 取 Notion Integration token**
+1. 開 https://www.notion.so/my-integrations → New integration
+2. 給名字（例：`kb-vault-sync`），workspace 選你自己的，Type = Internal
+3. 拿到 token（`ntn_...` 或 `secret_...`）
+
+**B. 建 / 選一個 Notion Database**
+
+DB schema **必須**對齊 kb-vault 推送格式：
+
+| Property name | Type |
+|---|---|
+| `Title` | title |
+| `Category` | rich_text |
+| `Tags` | multi_select |
+| `KbVaultId` | rich_text |
+| `UpdatedAt` | date |
+
+建議直接讓 AI 用 Notion API 建好，schema 不會錯。或在 Notion 手動建 DB → 加上面 5 個 property。
+
+**C. 把 integration connect 到那個 DB**：DB 頁右上「…」→ Connections → 加你的 integration
+
+**D. 取 database_id**：DB URL `https://www.notion.so/<workspace>/<DB-ID>?v=...`，DB-ID 是 32 個 hex 字元（含或不含 dash）
+
+```bash
+npx wrangler secret put NOTION_TOKEN
+npx wrangler secret put NOTION_DATABASE_ID  # 那個 32 字元的 ID
+```
+
+### 選配：GitHub backup（每張卡片 push 成 markdown 檔）
+
+**A. 建 fine-grained PAT**
+1. 開 https://github.com/settings/personal-access-tokens/new
+2. **Resource owner**: 你
+3. **Repository access**: Only select repositories → 選一個 backup 用 repo（建議 private）
+4. **Permissions**:
+   - Contents: **Read and write**
+   - Metadata: Read-only（必要）
+5. Generate → 拿 token（`github_pat_...`）
+
+**B. 建 backup repo**
+```bash
+gh repo create <你的帳號>/<repo-name>-backup --private --description "Daily backup of kb-vault notes"
+```
+
+**C. 設 secrets**
+```bash
 npx wrangler secret put GITHUB_TOKEN
-npx wrangler secret put GITHUB_REPO        # 如 alanchen75/my-kb-backup
+npx wrangler secret put GITHUB_REPO   # 例：alanchen75/my-kb-backup
 ```
 
 ### Deploy
