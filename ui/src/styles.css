@@ -358,6 +358,29 @@ pre code { background: transparent; padding: 0; }
   margin: 12px 0;
 }
 .alert pre { margin: 8px 0; }
+.conn-row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0,0,0,0.05);
+}
+.conn-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.conn-value {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  background: rgba(0,0,0,0.04);
+  padding: 6px 10px;
+  border-radius: 4px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
 
 .token-list li > div { flex: 1; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 

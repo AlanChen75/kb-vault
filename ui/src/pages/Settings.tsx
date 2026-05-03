@@ -1,6 +1,68 @@
 import { useEffect, useState } from 'react'
 import { api, type McpToken, type KbStats } from '../api/client'
 
+function ConnectionDetails({
+  token,
+  apiUrl,
+  onDismiss,
+}: {
+  token: string
+  apiUrl: string
+  onDismiss: () => void
+}) {
+  const mcpUrl = `${apiUrl}/mcp`
+  const auth = `Bearer ${token}`
+  const allText = `Name: kb-vault\nURL: ${mcpUrl}\nAuth: ${auth}`
+
+  const [copied, setCopied] = useState<string>('')
+  function copy(value: string, label: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(label)
+      setTimeout(() => setCopied(''), 1500)
+    })
+  }
+
+  return (
+    <div className="alert">
+      <strong>⚠️ Token 只顯示這一次，先複製完再關掉</strong>
+      <p className="hint" style={{ marginTop: 8 }}>
+        到 Claude.ai → Settings → Connectors → Add custom connector，貼以下三欄。
+      </p>
+
+      <div className="conn-row">
+        <span className="conn-label">Name</span>
+        <code className="conn-value">kb-vault</code>
+        <button onClick={() => copy('kb-vault', 'name')} className="btn-text">
+          {copied === 'name' ? '✓' : 'Copy'}
+        </button>
+      </div>
+
+      <div className="conn-row">
+        <span className="conn-label">URL</span>
+        <code className="conn-value">{mcpUrl}</code>
+        <button onClick={() => copy(mcpUrl, 'url')} className="btn-text">
+          {copied === 'url' ? '✓' : 'Copy'}
+        </button>
+      </div>
+
+      <div className="conn-row">
+        <span className="conn-label">Auth</span>
+        <code className="conn-value">{auth}</code>
+        <button onClick={() => copy(auth, 'auth')} className="btn-text">
+          {copied === 'auth' ? '✓' : 'Copy'}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+        <button onClick={() => copy(allText, 'all')} className="btn-primary">
+          {copied === 'all' ? '✓ 已全部複製' : '一鍵複製全部'}
+        </button>
+        <button onClick={onDismiss} className="btn-text">關閉</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const [tokens, setTokens] = useState<McpToken[]>([])
   const [stats, setStats] = useState<KbStats | null>(null)
@@ -78,11 +140,7 @@ export default function Settings() {
           <button type="submit" className="btn-primary">Generate</button>
         </form>
         {justCreated && (
-          <div className="alert">
-            <strong>Save this token now — it will not be shown again:</strong>
-            <pre><code>{justCreated}</code></pre>
-            <button onClick={() => setJustCreated(null)} className="btn-text">Dismiss</button>
-          </div>
+          <ConnectionDetails token={justCreated} apiUrl={api.apiUrl} onDismiss={() => setJustCreated(null)} />
         )}
         <ul className="token-list">
           {tokens.map((t) => (
