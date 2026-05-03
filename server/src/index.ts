@@ -14,7 +14,8 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { Env, Variables } from './types'
 
-import { cfAccessMiddleware } from './auth/cf-access'
+import authRoutes from './auth/github'
+import { sessionMiddleware } from './auth/session'
 
 import notesRoutes from './api/notes'
 import searchRoutes from './api/search'
@@ -47,9 +48,12 @@ app.use(
 app.get('/', (c) => c.json({ name: 'kb-vault', version: '0.1.0' }))
 app.get('/health', (c) => c.json({ ok: true, ts: Date.now() }))
 
-// ─── API (Cloudflare Access) ───
+// ─── Auth ───
+app.route('/auth/github', authRoutes)
+
+// ─── API (cookie session) ───
 const api = new Hono<{ Bindings: Env; Variables: Variables }>()
-api.use('*', cfAccessMiddleware)
+api.use('*', sessionMiddleware)
 api.route('/notes', notesRoutes)
 api.route('/search', searchRoutes)
 api.route('/graph', graphRoutes)

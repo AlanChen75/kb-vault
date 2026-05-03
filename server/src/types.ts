@@ -11,8 +11,8 @@ export type Env = {
   API_URL: string
 
   // Secrets
-  GOOGLE_CLIENT_ID: string
-  GOOGLE_CLIENT_SECRET: string
+  GITHUB_CLIENT_ID: string
+  GITHUB_CLIENT_SECRET: string
   SESSION_SECRET: string
   ALLOWED_EMAILS: string
 
