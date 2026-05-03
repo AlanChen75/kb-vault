@@ -11,8 +11,8 @@ function ConnectionDetails({
   onDismiss: () => void
 }) {
   const mcpUrl = `${apiUrl}/mcp`
-  const auth = `Bearer ${token}`
-  const allText = `Name: kb-vault\nURL: ${mcpUrl}\nAuth: ${auth}`
+  const tokenPreview =
+    token.length > 24 ? token.slice(0, 16) + '…' + token.slice(-4) : token
 
   const [copied, setCopied] = useState<string>('')
   function copy(value: string, label: string) {
@@ -24,19 +24,31 @@ function ConnectionDetails({
 
   return (
     <div className="alert">
-      <strong>⚠️ Token 只顯示這一次，先複製完再關掉</strong>
-      <p className="hint" style={{ marginTop: 8 }}>
-        到 Claude.ai → Settings → Connectors → Add custom connector，貼以下三欄。
-      </p>
+      <strong>⚠️ Token 只顯示這一次，立刻複製</strong>
 
+      <button
+        onClick={() => copy(token, 'token')}
+        className="btn-primary"
+        style={{
+          width: '100%',
+          marginTop: 12,
+          padding: '14px 16px',
+          fontSize: 14,
+          fontFamily: 'ui-monospace, monospace',
+        }}
+      >
+        {copied === 'token'
+          ? '✓ 已複製，貼進 Claude connector 的 Auth 欄'
+          : `📋 複製 token  (${tokenPreview})`}
+      </button>
+
+      <p className="hint" style={{ marginTop: 16, marginBottom: 6 }}>
+        Claude.ai → Settings → Connectors → Add custom connector，三欄填：
+      </p>
       <div className="conn-row">
         <span className="conn-label">Name</span>
         <code className="conn-value">kb-vault</code>
-        <button onClick={() => copy('kb-vault', 'name')} className="btn-text">
-          {copied === 'name' ? '✓' : 'Copy'}
-        </button>
       </div>
-
       <div className="conn-row">
         <span className="conn-label">URL</span>
         <code className="conn-value">{mcpUrl}</code>
@@ -44,21 +56,18 @@ function ConnectionDetails({
           {copied === 'url' ? '✓' : 'Copy'}
         </button>
       </div>
-
       <div className="conn-row">
         <span className="conn-label">Auth</span>
-        <code className="conn-value">{auth}</code>
-        <button onClick={() => copy(auth, 'auth')} className="btn-text">
-          {copied === 'auth' ? '✓' : 'Copy'}
-        </button>
+        <code className="conn-value">用上面那顆 token</code>
       </div>
 
-      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-        <button onClick={() => copy(allText, 'all')} className="btn-primary">
-          {copied === 'all' ? '✓ 已全部複製' : '一鍵複製全部'}
-        </button>
-        <button onClick={onDismiss} className="btn-text">關閉</button>
-      </div>
+      <button
+        onClick={onDismiss}
+        className="btn-text"
+        style={{ marginTop: 12 }}
+      >
+        關閉
+      </button>
     </div>
   )
 }
