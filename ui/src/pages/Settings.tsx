@@ -176,14 +176,32 @@ export default function Settings() {
 
       <section>
         <h2>Sync</h2>
-        <p className="hint">Push notes to external services. Requires server-side secrets configured.</p>
+        <p className="hint">把卡片推到 Notion DB（單向唯讀鏡像）或 GitHub repo（markdown 備份）。需要 Worker secrets 已設。</p>
         <div className="actions">
           <button onClick={() => runSync('notion')} disabled={syncing !== null} className="btn">
-            {syncing === 'notion' ? 'Syncing…' : 'Sync to Notion'}
+            {syncing === 'notion' ? 'Syncing…' : '🔄 同步到 Notion'}
           </button>
+          <a
+            href="https://www.notion.so/355bff7031e3815aad07e5216cbf1907"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-text"
+            title="在新視窗打開 Notion DB"
+          >
+            ↗ 打開 Notion DB
+          </a>
           <button onClick={() => runSync('github')} disabled={syncing !== null} className="btn">
-            {syncing === 'github' ? 'Syncing…' : 'Sync to GitHub'}
+            {syncing === 'github' ? 'Syncing…' : '📦 備份到 GitHub'}
           </button>
+          <a
+            href="https://github.com/AlanChen75/kb-vault-backup-demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-text"
+            title="在新視窗打開 GitHub backup repo"
+          >
+            ↗ 打開 backup repo
+          </a>
         </div>
         {syncResult && <p className="sync-result">{syncResult}</p>}
       </section>
