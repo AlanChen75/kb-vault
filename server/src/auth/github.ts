@@ -18,6 +18,10 @@ import { createSession, destroySession } from './session'
 const auth = new Hono<{ Bindings: Env }>()
 
 auth.get('/', async (c) => {
+  if (!c.env.GITHUB_CLIENT_ID) {
+    return c.json({ error: 'github_oauth_not_configured' }, 503)
+  }
+
   const state = crypto.randomUUID()
   await c.env.SESSIONS.put(`oauth:state:${state}`, '1', { expirationTtl: 600 })
 
@@ -32,6 +36,9 @@ auth.get('/', async (c) => {
 })
 
 auth.get('/cb', async (c) => {
+  if (!c.env.GITHUB_CLIENT_ID || !c.env.GITHUB_CLIENT_SECRET) {
+    return c.json({ error: 'github_oauth_not_configured' }, 503)
+  }
   const code = c.req.query('code')
   const state = c.req.query('state')
   if (!code || !state) return c.json({ error: 'missing_code_or_state' }, 400)

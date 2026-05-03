@@ -14,7 +14,8 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { Env, Variables } from './types'
 
-import authRoutes from './auth/github'
+import githubAuth from './auth/github'
+import magicLinkAuth from './auth/magic-link'
 import { sessionMiddleware } from './auth/session'
 
 import notesRoutes from './api/notes'
@@ -49,7 +50,16 @@ app.get('/', (c) => c.json({ name: 'kb-vault', version: '0.1.0' }))
 app.get('/health', (c) => c.json({ ok: true, ts: Date.now() }))
 
 // ─── Auth ───
-app.route('/auth/github', authRoutes)
+app.route('/auth/magic', magicLinkAuth)
+app.route('/auth/github', githubAuth)
+
+// Tells UI which auth methods are configured (so it can hide/show buttons)
+app.get('/auth/methods', (c) => {
+  return c.json({
+    magic_link: Boolean(c.env.RESEND_API_KEY),
+    github: Boolean(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET),
+  })
+})
 
 // ─── API (cookie session) ───
 const api = new Hono<{ Bindings: Env; Variables: Variables }>()

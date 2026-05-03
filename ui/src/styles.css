@@ -168,13 +168,23 @@ pre code { background: transparent; padding: 0; }
   box-shadow: var(--shadow);
 }
 .login-box h1 { margin: 0 0 8px; }
-.login-box .btn-primary {
+.login-box .btn-primary,
+.login-box .btn {
   display: inline-block;
-  margin: 24px 0 16px;
+  margin: 8px 0;
   padding: 12px 24px;
   font-size: 16px;
+  width: 100%;
+  text-align: center;
 }
-.login-box .hint { color: var(--text-muted); font-size: 13px; }
+.login-box .hint { color: var(--text-muted); font-size: 13px; margin-top: 24px; }
+.login-box .error { color: var(--danger); font-size: 14px; margin: 12px 0; }
+.login-form { display: flex; flex-direction: column; gap: 12px; margin: 24px 0; }
+.login-form input { padding: 12px; font-size: 16px; }
+.divider { display: flex; align-items: center; color: var(--text-muted); font-size: 13px; margin: 16px 0; }
+.divider::before, .divider::after { content: ''; flex: 1; border-top: 1px solid var(--border); }
+.divider::before { margin-right: 12px; }
+.divider::after { margin-left: 12px; }
 
 /* ─── Cards ─── */
 .cards {

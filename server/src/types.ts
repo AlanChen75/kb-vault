@@ -11,12 +11,18 @@ export type Env = {
   API_URL: string
 
   // Secrets
-  GITHUB_CLIENT_ID: string
-  GITHUB_CLIENT_SECRET: string
   SESSION_SECRET: string
   ALLOWED_EMAILS: string
 
-  // Optional secrets
+  // Optional auth secrets — at least one auth path must be configured
+  GITHUB_CLIENT_ID?: string
+  GITHUB_CLIENT_SECRET?: string
+  RESEND_API_KEY?: string
+
+  // Optional config
+  MAGIC_FROM_EMAIL?: string // defaults to 'kb-vault <onboarding@resend.dev>'
+
+  // Optional sync targets
   NOTION_TOKEN?: string
   NOTION_DATABASE_ID?: string
   GITHUB_TOKEN?: string
