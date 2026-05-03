@@ -10,6 +10,14 @@ import { generateNotePath, buildFrontmatter } from '../lib/note-format'
 
 const sync = new Hono<{ Bindings: Env; Variables: Variables }>()
 
+// Status — which sync targets have secrets configured (no auth required, only booleans returned)
+sync.get('/status', (c) => {
+  return c.json({
+    notion: Boolean(c.env.NOTION_TOKEN && c.env.NOTION_DATABASE_ID),
+    github: Boolean(c.env.GITHUB_TOKEN && c.env.GITHUB_REPO),
+  })
+})
+
 type NoteRow = {
   id: string
   title: string

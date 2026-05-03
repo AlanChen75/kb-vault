@@ -85,14 +85,17 @@ export default function Settings() {
   const [justCreated, setJustCreated] = useState<string | null>(null)
   const [syncing, setSyncing] = useState<'notion' | 'github' | null>(null)
   const [syncResult, setSyncResult] = useState<string>('')
+  const [syncStatus, setSyncStatus] = useState<{ notion: boolean; github: boolean }>({ notion: false, github: false })
 
   async function load() {
-    const [t, s] = await Promise.all([
+    const [t, s, status] = await Promise.all([
       api.get<{ items: McpToken[] }>('/api/tokens'),
       api.get<KbStats>('/api/stats').catch(() => null),
+      api.get<{ notion: boolean; github: boolean }>('/api/sync/status').catch(() => ({ notion: false, github: false })),
     ])
     setTokens(t.items)
     if (s) setStats(s)
+    setSyncStatus(status)
   }
   useEffect(() => { load() }, [])
 
@@ -176,32 +179,51 @@ export default function Settings() {
 
       <section>
         <h2>Sync</h2>
-        <p className="hint">把卡片推到 Notion DB（單向唯讀鏡像）或 GitHub repo（markdown 備份）。需要 Worker secrets 已設。</p>
-        <div className="actions">
-          <button onClick={() => runSync('notion')} disabled={syncing !== null} className="btn">
-            {syncing === 'notion' ? 'Syncing…' : '🔄 同步到 Notion'}
-          </button>
-          <a
-            href="https://www.notion.so/355bff7031e3815aad07e5216cbf1907"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-text"
-            title="在新視窗打開 Notion DB"
-          >
-            ↗ 打開 Notion DB
-          </a>
-          <button onClick={() => runSync('github')} disabled={syncing !== null} className="btn">
-            {syncing === 'github' ? 'Syncing…' : '📦 備份到 GitHub'}
-          </button>
-          <a
-            href="https://github.com/AlanChen75/kb-vault-backup-demo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-text"
-            title="在新視窗打開 GitHub backup repo"
-          >
-            ↗ 打開 backup repo
-          </a>
+        <p className="hint">
+          把卡片推到 Notion DB（單向唯讀鏡像）或 GitHub repo（markdown 備份）。
+          Token 是 Worker 全域 secret，要修改請執行 <code>wrangler secret put NOTION_TOKEN</code> 等指令（個人 KB 設計，非 per-user UI）。
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, minWidth: 80 }}>
+              {syncStatus.notion ? '✅' : '❌'} Notion
+            </span>
+            <button onClick={() => runSync('notion')} disabled={syncing !== null || !syncStatus.notion} className="btn">
+              {syncing === 'notion' ? 'Syncing…' : '🔄 立即同步'}
+            </button>
+            <a
+              href="https://www.notion.so/355bff7031e3815aad07e5216cbf1907"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-text"
+              title="在新視窗打開 Notion DB"
+            >
+              ↗ 打開 Notion DB
+            </a>
+            {!syncStatus.notion && (
+              <small style={{ color: '#9ca3af' }}>未設定 NOTION_TOKEN / NOTION_DATABASE_ID</small>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, minWidth: 80 }}>
+              {syncStatus.github ? '✅' : '❌'} GitHub
+            </span>
+            <button onClick={() => runSync('github')} disabled={syncing !== null || !syncStatus.github} className="btn">
+              {syncing === 'github' ? 'Syncing…' : '📦 立即備份'}
+            </button>
+            <a
+              href="https://github.com/AlanChen75/kb-vault-backup-demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-text"
+              title="在新視窗打開 GitHub backup repo"
+            >
+              ↗ 打開 backup repo
+            </a>
+            {!syncStatus.github && (
+              <small style={{ color: '#9ca3af' }}>未設定 GITHUB_TOKEN / GITHUB_REPO</small>
+            )}
+          </div>
         </div>
         {syncResult && <p className="sync-result">{syncResult}</p>}
       </section>
