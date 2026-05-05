@@ -15,17 +15,17 @@ import {
   getStats,
   updateNote as updateNoteLib,
 } from '../lib/notes'
-import { NOTE_FORMAT_DESCRIPTION } from '../lib/note-format'
+import { CREATE_NOTE_DESCRIPTION, NOTE_FORMAT_TEMPLATE } from '../lib/note-format'
 
 export const tools = [
   {
     name: 'create_note',
-    description: NOTE_FORMAT_DESCRIPTION,
+    description: CREATE_NOTE_DESCRIPTION,
     inputSchema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: '筆記標題（30 字內）' },
-        content: { type: 'string', description: '完整 Markdown 內容（含 YAML frontmatter）' },
+        content: { type: 'string', description: NOTE_FORMAT_TEMPLATE },
         category: { type: 'string', description: '分類路徑，如 tech/ai-ml' },
         tags: { type: 'array', items: { type: 'string' } },
         source_url: { type: 'string' },
@@ -35,7 +35,7 @@ export const tools = [
   },
   {
     name: 'update_note',
-    description: '更新既有筆記。先用 get_note 讀現有內容，修改後用此工具更新。',
+    description: '更新筆記 / 改寫筆記 / 修改筆記 / update note / edit note / modify note。更新 kb-vault 中既有的筆記。先用 get_note 讀現有內容，修改後用此工具更新。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -50,7 +50,7 @@ export const tools = [
   },
   {
     name: 'get_note',
-    description: '讀取筆記的完整內容（含 frontmatter、雙向連結）。',
+    description: '讀取筆記 / 取得筆記 / 開啟筆記 / read note / get note / fetch note / open note。讀取 kb-vault 中筆記的完整內容（含 frontmatter、雙向連結）。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string' } },
@@ -59,7 +59,7 @@ export const tools = [
   },
   {
     name: 'search_notes',
-    description: '搜尋知識庫筆記（D1 FTS5 全文）。可限定分類。回傳含 snippet。',
+    description: '搜尋筆記 / 找筆記 / 查筆記 / search notes / find notes / query notes。在 kb-vault 中用 D1 FTS5 全文搜尋筆記，可限定分類。回傳含 snippet。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -72,7 +72,7 @@ export const tools = [
   },
   {
     name: 'list_recent',
-    description: '列出最近新增或修改的筆記。可限定分類。',
+    description: '列出最近筆記 / 最近新增 / 最近修改 / list recent notes / recent activity / latest notes。列出 kb-vault 中最近新增或修改的筆記，可限定分類。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -83,13 +83,13 @@ export const tools = [
   },
   {
     name: 'kb_stats',
-    description: '查看知識庫統計：總筆記數、各分類數量、近期活動。',
+    description: '知識庫統計 / 筆記數量 / 分類分布 / kb stats / knowledge base statistics / note count。查看 kb-vault 統計：總筆記數、各分類數量、近期活動。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'fetch_url',
     description:
-      '抓取任意 URL 的網頁內容轉純文字。用於讀取使用者貼的連結、文章。社群媒體因需登入，可能無法抓取完整內容。',
+      '抓取網頁 / 讀取 URL / 讀文章 / fetch url / scrape page / read webpage / get article。抓取任意 URL 的網頁內容轉純文字。用於讀取使用者貼的連結、文章。社群媒體因需登入，可能無法抓取完整內容。',
     inputSchema: {
       type: 'object',
       properties: {

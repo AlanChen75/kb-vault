@@ -81,9 +81,19 @@ export function buildFrontmatter(meta: Record<string, unknown>): string {
  *
  * Ported verbatim from kb-mcp.
  */
-export const NOTE_FORMAT_DESCRIPTION = `建立知識庫筆記。
+/**
+ * Tool-level description for create_note — vector-search optimized.
+ * Bilingual + verb-object front-loaded; format spec moved to NOTE_FORMAT_TEMPLATE.
+ */
+export const CREATE_NOTE_DESCRIPTION = `建立筆記 / 新增筆記 / 儲存筆記 / 寫筆記 / create note / new note / save note / add note / write note。
 
-content 參數必須是完整的 Markdown 筆記，包含 YAML frontmatter。格式如下：
+在 kb-vault 中建立一份新的 Markdown 筆記。
+何時用：使用者要建立**新**筆記、整理討論成永久紀錄、新主題開檔。
+何時不用：要改寫既有筆記內容 → 用 \`update_note\`（kb-vault 沒有 append_note，月份檔場景請另外組）。
+content 參數請給完整 Markdown（含 YAML frontmatter），格式規範見參數說明。`
+
+/** Format template — embedded in `content` param description, read only when calling. */
+export const NOTE_FORMAT_TEMPLATE = `完整的 Markdown 筆記內容（含 YAML frontmatter）。格式如下：
 
 ---
 title: "標題（30字內）"
@@ -141,3 +151,9 @@ source: "來源URL或描述"
 - personal: 個人筆記
 
 所有筆記內容必須使用繁體中文。`
+
+/**
+ * @deprecated Use CREATE_NOTE_DESCRIPTION + NOTE_FORMAT_TEMPLATE instead.
+ * Kept for back-compat if external imports exist.
+ */
+export const NOTE_FORMAT_DESCRIPTION = CREATE_NOTE_DESCRIPTION
